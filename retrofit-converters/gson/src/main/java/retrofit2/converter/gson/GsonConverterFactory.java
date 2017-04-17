@@ -47,27 +47,41 @@ public final class GsonConverterFactory extends Converter.Factory {
    * decoding from JSON (when no charset is specified by a header) will use UTF-8.
    */
   public static GsonConverterFactory create(Gson gson) {
-    return new GsonConverterFactory(gson);
+    return new GsonConverterFactory(gson, gson);
   }
 
-  private final Gson gson;
+  /**
+   * Create an instance using separate {@code gson} for serialization/deserialization conversion.
+   * Encoding to JSON and decoding from JSON (when no charset is specified by a header) will use
+   * UTF-8.
+   */
+  public static GsonConverterFactory create(Gson gsonSerializer, Gson gsonDeserializer) {
+    return new GsonConverterFactory(gsonSerializer, gsonDeserializer);
+  }
 
-  private GsonConverterFactory(Gson gson) {
-    if (gson == null) throw new NullPointerException("gson == null");
-    this.gson = gson;
+
+  private final Gson gsonSerializer;
+  private final Gson gsonDeserializer;
+
+  private GsonConverterFactory(Gson gsonSerializer, Gson gsonDeserializer) {
+    if (gsonSerializer == null || gsonDeserializer == null) {
+      throw new NullPointerException("gson == null");
+    }
+    this.gsonSerializer = gsonSerializer;
+    this.gsonDeserializer = gsonDeserializer;
   }
 
   @Override
   public Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] annotations,
       Retrofit retrofit) {
-    TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(type));
-    return new GsonResponseBodyConverter<>(gson, adapter);
+    TypeAdapter<?> adapter = gsonDeserializer.getAdapter(TypeToken.get(type));
+    return new GsonResponseBodyConverter<>(gsonDeserializer, adapter);
   }
 
   @Override
   public Converter<?, RequestBody> requestBodyConverter(Type type,
       Annotation[] parameterAnnotations, Annotation[] methodAnnotations, Retrofit retrofit) {
-    TypeAdapter<?> adapter = gson.getAdapter(TypeToken.get(type));
-    return new GsonRequestBodyConverter<>(gson, adapter);
+    TypeAdapter<?> adapter = gsonSerializer.getAdapter(TypeToken.get(type));
+    return new GsonRequestBodyConverter<>(gsonSerializer, adapter);
   }
 }
